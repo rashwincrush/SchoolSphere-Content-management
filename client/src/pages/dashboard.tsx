@@ -42,16 +42,16 @@ export default function Dashboard() {
   });
 
   // Get upcoming events (next 5)
-  const upcomingEvents = events
+  const upcomingEvents = Array.isArray(events) ? events
     .filter((event: any) => new Date(event.startDate) >= new Date())
     .sort((a: any, b: any) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-    .slice(0, 5);
+    .slice(0, 5) : [];
 
   // Get recent posts (last 3)
-  const recentPosts = posts
+  const recentPosts = Array.isArray(posts) ? posts
     .filter((post: any) => post.isPublished)
-    .sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-    .slice(0, 3);
+    .sort((a: any, b: any) => new Date(b.publishedAt || b.createdAt).getTime() - new Date(a.publishedAt || a.createdAt).getTime())
+    .slice(0, 3) : [];
 
   return (
     <AppShell>
