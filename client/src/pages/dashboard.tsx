@@ -13,12 +13,14 @@ import { useBranch } from '@/context/BranchContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 import { EventForm } from '@/components/events/EventForm';
+import { PostForm } from '@/components/posts/PostForm';
 
 export default function Dashboard() {
   const { t } = useLanguage();
   const { selectedBranchId, selectedBranch } = useBranch();
   const { user } = useAuth();
   const [showEventForm, setShowEventForm] = useState(false);
+  const [showPostForm, setShowPostForm] = useState(false);
 
   // Fetch data
   const { data: events = [] } = useQuery<any[]>({
@@ -78,6 +80,7 @@ export default function Dashboard() {
             </Button>
             
             <Button
+              onClick={() => setShowPostForm(true)}
               variant="secondary"
               className="bg-secondary-700 text-white hover:bg-secondary-800 shadow-material-1"
             >
@@ -263,6 +266,12 @@ export default function Dashboard() {
       <EventForm
         open={showEventForm}
         onOpenChange={setShowEventForm}
+      />
+
+      {/* Post Form Modal */}
+      <PostForm
+        open={showPostForm}
+        onClose={() => setShowPostForm(false)}
       />
     </AppShell>
   );
