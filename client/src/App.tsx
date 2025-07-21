@@ -15,6 +15,8 @@ import Calendar from "@/pages/calendar";
 import Analytics from "@/pages/analytics";
 import Users from "@/pages/users";
 import Settings from "@/pages/settings";
+import Profile from "@/pages/profile";
+import BranchManagement from "@/pages/branch-management";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -34,6 +36,8 @@ function Router() {
           <Route path="/analytics" component={Analytics} />
           <Route path="/users" component={Users} />
           <Route path="/settings" component={Settings} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/branch-management" component={BranchManagement} />
         </>
       )}
       <Route component={NotFound} />

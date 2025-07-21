@@ -11,6 +11,7 @@ import {
   uuid,
   date,
   time,
+  numeric,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -27,16 +28,44 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (required for Replit Auth)
+// Organizations/Tenants table (Multi-tenant support)
+export const organizations = pgTable("organizations", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  domain: varchar("domain", { length: 255 }),
+  logo: varchar("logo", { length: 500 }),
+  settings: jsonb("settings").$type<Record<string, any>>().default({}),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  subscriptionStatus: varchar("subscription_status", { 
+    enum: ["trial", "active", "past_due", "canceled", "unpaid"] 
+  }).default("trial"),
+  subscriptionPlan: varchar("subscription_plan", { 
+    enum: ["starter", "professional", "enterprise"] 
+  }).default("starter"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  billingEmail: varchar("billing_email", { length: 255 }),
+  maxBranches: integer("max_branches").default(1),
+  maxUsers: integer("max_users").default(50),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User storage table (required for Replit Auth + Multi-tenant)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role", { enum: ["admin", "teacher", "parent", "student"] }).default("parent"),
+  organizationId: integer("organization_id").references(() => organizations.id),
+  role: varchar("role", { enum: ["owner", "admin", "teacher", "parent", "student"] }).default("parent"),
   branchId: integer("branch_id").references(() => branches.id),
   language: varchar("language", { enum: ["en", "es"] }).default("en"),
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -44,6 +73,7 @@ export const users = pgTable("users", {
 // Branches table
 export const branches = pgTable("branches", {
   id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   address: text("address"),
   phone: varchar("phone", { length: 50 }),
@@ -56,6 +86,7 @@ export const branches = pgTable("branches", {
 // Events table
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   startDate: date("start_date").notNull(),
@@ -85,6 +116,7 @@ export const eventRsvps = pgTable("event_rsvps", {
 // Content/Posts table
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   content: text("content").notNull(),
   type: varchar("type", { enum: ["announcement", "news", "social"] }).default("announcement"),
@@ -102,19 +134,21 @@ export const posts = pgTable("posts", {
 // Notifications table
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   message: text("message").notNull(),
-  type: varchar("type", { enum: ["event", "announcement", "system", "emergency"] }).default("system"),
+  type: varchar("type", { enum: ["event", "announcement", "system", "emergency", "billing"] }).default("system"),
   isRead: boolean("is_read").default(false),
   relatedId: integer("related_id"), // Can reference events, posts, etc.
-  relatedType: varchar("related_type", { enum: ["event", "post", "user"] }),
+  relatedType: varchar("related_type", { enum: ["event", "post", "user", "subscription"] }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Activity logs table
 export const activityLogs = pgTable("activity_logs", {
   id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
   action: varchar("action", { length: 255 }).notNull(),
   entityType: varchar("entity_type", { length: 100 }).notNull(),
@@ -124,8 +158,71 @@ export const activityLogs = pgTable("activity_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Subscription plans table
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  description: text("description"),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  interval: varchar("interval", { enum: ["month", "year"] }).default("month"),
+  stripePriceId: varchar("stripe_price_id", { length: 255 }),
+  features: jsonb("features").$type<string[]>().default([]),
+  maxBranches: integer("max_branches").default(1),
+  maxUsers: integer("max_users").default(50),
+  maxStorageGB: integer("max_storage_gb").default(10),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Subscription history table
+export const subscriptionHistory = pgTable("subscription_history", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  planId: integer("plan_id").references(() => subscriptionPlans.id).notNull(),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  status: varchar("status", { enum: ["active", "canceled", "past_due", "unpaid", "incomplete"] }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  canceledAt: timestamp("canceled_at"),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Usage tracking table
+export const usageTracking = pgTable("usage_tracking", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  month: integer("month").notNull(),
+  year: integer("year").notNull(),
+  activeUsers: integer("active_users").default(0),
+  totalEvents: integer("total_events").default(0),
+  totalPosts: integer("total_posts").default(0),
+  storageUsedMB: integer("storage_used_mb").default(0),
+  apiCalls: integer("api_calls").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  users: many(users),
+  branches: many(branches),
+  events: many(events),
+  posts: many(posts),
+  notifications: many(notifications),
+  activityLogs: many(activityLogs),
+  subscriptionHistory: many(subscriptionHistory),
+  usageTracking: many(usageTracking),
+}));
+
 export const usersRelations = relations(users, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [users.organizationId],
+    references: [organizations.id],
+  }),
   branch: one(branches, {
     fields: [users.branchId],
     references: [branches.id],
@@ -197,6 +294,8 @@ export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
 }));
 
 // Schema types
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = typeof organizations.$inferInsert;
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Branch = typeof branches.$inferSelect;
@@ -211,6 +310,12 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = typeof activityLogs.$inferInsert;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+export type SubscriptionHistory = typeof subscriptionHistory.$inferSelect;
+export type InsertSubscriptionHistory = typeof subscriptionHistory.$inferInsert;
+export type UsageTracking = typeof usageTracking.$inferSelect;
+export type InsertUsageTracking = typeof usageTracking.$inferInsert;
 
 // Zod schemas
 export const insertEventSchema = createInsertSchema(events).omit({

@@ -106,43 +106,9 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUserProfile(id: string, updates: Partial<User>): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
-
-  // Organization operations
-  async getOrganization(id: number): Promise<Organization | undefined> {
-    const [org] = await db.select().from(organizations).where(eq(organizations.id, id));
-    return org;
-  }
-
-  async getOrganizationByUserId(userId: string): Promise<Organization | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-    if (!user?.organizationId) return undefined;
-    return this.getOrganization(user.organizationId);
-  }
-
-  async updateOrganization(id: number, updates: Partial<Organization>): Promise<Organization> {
-    const [org] = await db
-      .update(organizations)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(organizations.id, id))
-      .returning();
-    return org;
-  }
-
   // Branch operations
-  async getBranches(organizationId: number): Promise<Branch[]> {
-    return await db
-      .select()
-      .from(branches)
-      .where(eq(branches.organizationId, organizationId))
-      .orderBy(branches.name);
+  async getBranches(): Promise<Branch[]> {
+    return await db.select().from(branches).where(eq(branches.isActive, true));
   }
 
   async getBranch(id: number): Promise<Branch | undefined> {
@@ -150,39 +116,20 @@ export class DatabaseStorage implements IStorage {
     return branch;
   }
 
-  async createBranch(branchData: InsertBranch): Promise<Branch> {
-    const [branch] = await db.insert(branches).values(branchData).returning();
-    return branch;
-  }
-
-  async updateBranch(id: number, updates: Partial<Branch>): Promise<Branch> {
-    const [branch] = await db
-      .update(branches)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(branches.id, id))
-      .returning();
-    return branch;
-  }
-
-  async deleteBranch(id: number): Promise<void> {
-    await db.delete(branches).where(eq(branches.id, id));
+  async createBranch(branch: InsertBranch): Promise<Branch> {
+    const [newBranch] = await db.insert(branches).values(branch).returning();
+    return newBranch;
   }
 
   // Event operations
-  async getEvents(organizationId: number, branchId?: number): Promise<Event[]> {
+  async getEvents(branchId?: number): Promise<Event[]> {
+    const query = db.select().from(events).where(eq(events.isActive, true));
+    
     if (branchId) {
-      return await db
-        .select()
-        .from(events)
-        .where(and(eq(events.organizationId, organizationId), eq(events.branchId, branchId)))
-        .orderBy(desc(events.startDate));
+      return await query.where(and(eq(events.isActive, true), eq(events.branchId, branchId)));
     }
     
-    return await db
-      .select()
-      .from(events)
-      .where(eq(events.organizationId, organizationId))
-      .orderBy(desc(events.startDate));
+    return await query.orderBy(desc(events.startDate));
   }
 
   async getEvent(id: number): Promise<Event | undefined> {
@@ -205,7 +152,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteEvent(id: number): Promise<void> {
-    await db.delete(events).where(eq(events.id, id));
+    await db.update(events).set({ isActive: false }).where(eq(events.id, id));
   }
 
   // RSVP operations
@@ -227,29 +174,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateRsvp(eventId: number, userId: string, status: string): Promise<EventRsvp> {
-    const [rsvp] = await db
+    const [updatedRsvp] = await db
       .update(eventRsvps)
-      .set({ status: status as any })
+      .set({ status })
       .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)))
       .returning();
-    return rsvp;
+    return updatedRsvp;
   }
 
   // Post operations
-  async getPosts(organizationId: number, branchId?: number): Promise<Post[]> {
+  async getPosts(branchId?: number): Promise<Post[]> {
+    const query = db.select().from(posts);
+    
     if (branchId) {
-      return await db
-        .select()
-        .from(posts)
-        .where(and(eq(posts.organizationId, organizationId), eq(posts.branchId, branchId)))
-        .orderBy(desc(posts.createdAt));
+      return await query.where(eq(posts.branchId, branchId)).orderBy(desc(posts.createdAt));
     }
     
-    return await db
-      .select()
-      .from(posts)
-      .where(eq(posts.organizationId, organizationId))
-      .orderBy(desc(posts.createdAt));
+    return await query.orderBy(desc(posts.createdAt));
   }
 
   async getPost(id: number): Promise<Post | undefined> {
@@ -281,7 +222,8 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(notifications)
       .where(eq(notifications.userId, userId))
-      .orderBy(desc(notifications.createdAt));
+      .orderBy(desc(notifications.createdAt))
+      .limit(50);
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
@@ -294,24 +236,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Activity log operations
-  async getActivityLogs(organizationId: number, branchId?: number, limit: number = 50): Promise<ActivityLog[]> {
-    let query = db
-      .select()
-      .from(activityLogs)
-      .where(eq(activityLogs.organizationId, organizationId))
-      .orderBy(desc(activityLogs.createdAt))
-      .limit(limit);
-
+  async getActivityLogs(branchId?: number, limit = 50): Promise<ActivityLog[]> {
+    const query = db.select().from(activityLogs);
+    
     if (branchId) {
-      query = db
-        .select()
-        .from(activityLogs)
-        .where(and(eq(activityLogs.organizationId, organizationId), eq(activityLogs.branchId, branchId)))
+      return await query
+        .where(eq(activityLogs.branchId, branchId))
         .orderBy(desc(activityLogs.createdAt))
         .limit(limit);
     }
-
-    return await query;
+    
+    return await query.orderBy(desc(activityLogs.createdAt)).limit(limit);
   }
 
   async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
@@ -319,82 +254,55 @@ export class DatabaseStorage implements IStorage {
     return newLog;
   }
 
-  // Settings operations
-  async getSettings(organizationId: number): Promise<any> {
-    const [org] = await db.select().from(organizations).where(eq(organizations.id, organizationId));
-    return org?.settings || {};
-  }
-
-  async updateSettings(organizationId: number, settings: any): Promise<any> {
-    const [org] = await db
-      .update(organizations)
-      .set({ settings, updatedAt: new Date() })
-      .where(eq(organizations.id, organizationId))
-      .returning();
-    return org?.settings || {};
-  }
-
   // Analytics operations
-  async getEventStats(organizationId: number, branchId?: number): Promise<any> {
-    const baseCondition = eq(events.organizationId, organizationId);
-    const condition = branchId ? and(baseCondition, eq(events.branchId, branchId)) : baseCondition;
-
-    const [totalEvents] = await db
+  async getEventStats(branchId?: number): Promise<any> {
+    const eventCountQuery = db
       .select({ count: count() })
       .from(events)
-      .where(condition);
-
-    const [upcomingEvents] = await db
-      .select({ count: count() })
-      .from(events)
-      .where(and(condition, sql`start_date > NOW()`));
-
+      .where(eq(events.isActive, true));
+    
+    if (branchId) {
+      eventCountQuery.where(and(eq(events.isActive, true), eq(events.branchId, branchId)));
+    }
+    
+    const [eventCount] = await eventCountQuery;
+    
     return {
-      total: totalEvents.count,
-      upcoming: upcomingEvents.count,
-      completed: totalEvents.count - upcomingEvents.count,
+      totalEvents: eventCount.count,
+      // Add more analytics as needed
     };
   }
 
-  async getSocialStats(organizationId: number, branchId?: number): Promise<any> {
-    const baseCondition = eq(posts.organizationId, organizationId);
-    const condition = branchId ? and(baseCondition, eq(posts.branchId, branchId)) : baseCondition;
-
-    const [totalPosts] = await db
+  async getSocialStats(branchId?: number): Promise<any> {
+    const postCountQuery = db
       .select({ count: count() })
       .from(posts)
-      .where(condition);
-
-    const [recentPosts] = await db
-      .select({ count: count() })
-      .from(posts)
-      .where(and(condition, sql`created_at > NOW() - INTERVAL '7 days'`));
-
+      .where(eq(posts.isPublished, true));
+    
+    if (branchId) {
+      postCountQuery.where(and(eq(posts.isPublished, true), eq(posts.branchId, branchId)));
+    }
+    
+    const [postCount] = await postCountQuery;
+    
     return {
-      totalPosts: totalPosts.count,
-      recentPosts: recentPosts.count,
-      engagement: Math.floor(Math.random() * 100), // Placeholder until real engagement tracking
+      totalPosts: postCount.count,
+      // Add more analytics as needed
     };
   }
 
-  async getUserStats(organizationId: number, branchId?: number): Promise<any> {
-    const baseCondition = eq(users.organizationId, organizationId);
-    const condition = branchId ? and(baseCondition, eq(users.branchId, branchId)) : baseCondition;
-
-    const [totalUsers] = await db
-      .select({ count: count() })
-      .from(users)
-      .where(condition);
-
-    const [activeUsers] = await db
-      .select({ count: count() })
-      .from(users)
-      .where(and(condition, eq(users.isActive, true)));
-
+  async getUserStats(branchId?: number): Promise<any> {
+    const userCountQuery = db.select({ count: count() }).from(users);
+    
+    if (branchId) {
+      userCountQuery.where(eq(users.branchId, branchId));
+    }
+    
+    const [userCount] = await userCountQuery;
+    
     return {
-      total: totalUsers.count,
-      active: activeUsers.count,
-      inactive: totalUsers.count - activeUsers.count,
+      totalUsers: userCount.count,
+      // Add more analytics as needed
     };
   }
 }

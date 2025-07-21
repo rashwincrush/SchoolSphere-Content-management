@@ -1,8 +1,8 @@
-# EduConnect - Multi-Branch School Management System
+# EduConnect - Multi-Tenant School Management SaaS Platform
 
 ## Overview
 
-EduConnect is a comprehensive multi-branch school management system built as a modern web application. It provides event management, content creation, social media automation, and multilingual support for educational institutions with multiple campus locations. The system features a centralized dashboard for managing activities across all branches while maintaining branch-specific customization.
+EduConnect is a comprehensive multi-tenant SaaS platform for school management built as a modern web application. It provides subscription-based access to event management, content creation, social media automation, and multilingual support for educational institutions. The system features tenant isolation, subscription billing, and scalable multi-branch management for schools of all sizes.
 
 ## User Preferences
 
