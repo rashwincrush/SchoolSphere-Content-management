@@ -30,12 +30,12 @@ export default function Events() {
   });
 
   // Filter events based on search and category
-  const filteredEvents = events.filter((event: any) => {
+  const filteredEvents = Array.isArray(events) ? events.filter((event: any) => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || event.category === categoryFilter;
     return matchesSearch && matchesCategory;
-  });
+  }) : [];
 
   // Separate upcoming and past events
   const upcomingEvents = filteredEvents.filter((event: any) => 
