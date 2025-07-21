@@ -10,6 +10,7 @@ import {
   Settings,
   User,
   Building,
+  Zap,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'calendar', href: '/calendar', icon: CalendarDays },
   { name: 'analytics', href: '/analytics', icon: BarChart3 },
   { name: 'users', href: '/users', icon: Users },
+  { name: 'Feature Hub', href: '/features', icon: Zap },
   { name: 'settings', href: '/settings', icon: Settings },
 ];
 
@@ -55,7 +57,9 @@ export function Sidebar() {
                 )}
               >
                 <item.icon className="w-5 h-5" />
-                <span className="font-medium">{t(item.name)}</span>
+                <span className="font-medium">
+                  {item.name === 'Feature Hub' ? item.name : t(item.name)}
+                </span>
               </div>
             </Link>
           );

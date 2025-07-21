@@ -17,6 +17,7 @@ import Users from "@/pages/users";
 import Settings from "@/pages/settings";
 import Profile from "@/pages/profile";
 import BranchManagement from "@/pages/branch-management";
+import FeatureHub from "@/pages/feature-hub";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
           <Route path="/analytics" component={Analytics} />
           <Route path="/users" component={Users} />
           <Route path="/settings" component={Settings} />
+          <Route path="/features" component={FeatureHub} />
           <Route path="/profile" component={Profile} />
           <Route path="/branch-management" component={BranchManagement} />
         </>

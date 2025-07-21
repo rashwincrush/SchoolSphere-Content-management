@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Bell, User as UserIcon } from 'lucide-react';
 import { BranchSelector } from '@/components/common/BranchSelector';
 import { LanguageToggle } from '@/components/common/LanguageToggle';
@@ -5,10 +6,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import type { User, Notification } from '@shared/schema';
 
 export function TopBar() {
   const { user } = useAuth();
+  const [showNotifications, setShowNotifications] = useState(false);
   
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
@@ -38,6 +41,7 @@ export function TopBar() {
                 variant="ghost"
                 size="sm"
                 className="relative p-2 rounded-full hover:bg-primary-800 transition-colors text-white"
+                onClick={() => setShowNotifications(!showNotifications)}
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -73,6 +77,11 @@ export function TopBar() {
           </div>
         </div>
       </div>
+      
+      <NotificationCenter 
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
     </header>
   );
 }
