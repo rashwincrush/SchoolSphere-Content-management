@@ -27,6 +27,12 @@ export default function Events() {
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['/api/events', selectedBranchId],
+    queryFn: async () => {
+      const url = selectedBranchId ? `/api/events?branchId=${selectedBranchId}` : '/api/events';
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch events');
+      return response.json();
+    },
   });
 
   // Filter events based on search and category
