@@ -1,8 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { applySecurity } from "./security";
 
 const app = express();
+
+// Apply security middleware first
+applySecurity(app);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -34,6 +39,11 @@ app.use((req, res, next) => {
   });
 
   next();
+});
+
+// Add health check endpoint
+app.get('/healthz', (_req, res) => {
+  res.status(200).json({ ok: true, uptime: process.uptime() });
 });
 
 (async () => {

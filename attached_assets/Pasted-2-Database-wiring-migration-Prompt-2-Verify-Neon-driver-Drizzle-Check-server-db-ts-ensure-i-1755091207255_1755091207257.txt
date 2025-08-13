@@ -1,0 +1,164 @@
+2) Database wiring & migration
+Prompt 2 — Verify Neon driver + Drizzle
+
+Check server/db.ts: ensure it uses @neondatabase/serverless with process.env.DATABASE_URL. If not, refactor to:
+
+ts
+Copy
+Edit
+import { neon } from '@neondatabase/serverless';
+const sql = neon(process.env.DATABASE_URL!);
+export { sql };
+Then confirm drizzle.config.ts points at process.env.DATABASE_URL.
+
+(Why: Neon’s serverless driver is designed for HTTP/WebSocket environments; never hardcode creds. 
+Neon
+Neon
+)
+
+Prompt 3 — Push schema
+
+Open a shell and run: npm run db:push
+If it fails, print the full error and fix paths/env until it succeeds.
+
+(Why: drizzle-kit push syncs code-first schema to the DB. 
+Drizzle ORM
++1
+)
+
+3) Security hardening (CORS + rate limits)
+Prompt 4 — Add security middleware
+
+Create server/security.ts with:
+
+ts
+Copy
+Edit
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
+import type { Express } from 'express';
+export function applySecurity(app: Express) {
+  const allowed = [
+    'https://{repl-name}-{username}.replit.app',
+    'http://localhost:5000',
+  ];
+  app.use(cors({
+    origin(origin, cb) {
+      if (!origin || allowed.includes(origin)) return cb(null, true);
+      return cb(new Error('CORS blocked'));
+    },
+    credentials: true,
+    methods: ['GET','POST','PATCH','DELETE','OPTIONS'],
+    allowedHeaders: ['Content-Type','Authorization'],
+    maxAge: 600,
+  }));
+  app.use('/api', rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  }));
+}
+Import and call applySecurity(app) at the top of server/index.ts after const app = express().
+
+(Why: express-rate-limit is the standard per-IP limiter; CORS restricts origins. 
+npm
+GitHub
+)
+
+4) Health check
+Prompt 5 — Add /healthz
+
+In server/index.ts, add:
+
+ts
+Copy
+Edit
+app.get('/healthz', (_req, res) => {
+  res.status(200).json({ ok: true, uptime: process.uptime() });
+});
+Restart dev and confirm GET /healthz returns { ok: true }.
+
+5) README (ship docs)
+Prompt 6 — Create README.md
+
+Create README.md with the following sections: Overview, Tech Stack, Monorepo Layout, Env Vars, Development, Build, Deploy (Replit Autoscale), Auth (Replit OIDC), Database (Neon + Drizzle), Security, Testing (Vitest), Health, License.
+Use the content from my dossier; where missing, infer from the repo and include the exact dev/build commands and the app URL format https://{repl-name}-{username}.replit.app/.
+
+(Why: Autoscale deploys from build/run; public URL follows that pattern. 
+Replit Docs
+)
+
+6) Testing scaffold (Vitest)
+Prompt 7 — Add Vitest setup
+
+Install dev deps: npm i -D vitest @testing-library/react @testing-library/user-event jsdom
+Update vite.config.ts to include:
+
+ts
+Copy
+Edit
+/// <reference types="vitest" />
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+export default defineConfig({
+  plugins: [react()],
+  test: { environment: 'jsdom', setupFiles: ['./client/test/setup.ts'], globals: true },
+});
+Create client/test/setup.ts with import '@testing-library/jest-dom';
+Add scripts to package.json: "test":"vitest","test:watch":"vitest --watch","coverage":"vitest run --coverage"
+Run npm run test and show results.
+
+(Why: Vitest is Vite-native and configured via test in Vite config. 
+Vitest
++1
+)
+
+7) OIDC login flow check (Replit Auth)
+Prompt 8 — Verify OIDC endpoints
+
+Inspect server/replitAuth.ts and routes. Confirm:
+
+Login starts OIDC with issuer https://replit.com
+
+Callback route is /api/callback
+
+Session cookie is HTTPOnly + Secure in production
+If any of these differ, align them and print the updated code.
+
+(Why: Replit Auth is positioned as an OpenID Connect provider; follow standard OIDC issuer & callback pattern. 
+Replit Blog
+)
+
+8) Dev run & smoke test
+Prompt 9 — Start dev & test endpoints
+
+Run npm run dev. When live:
+
+Open / and confirm the SPA loads.
+
+GET /api/auth/user (unauthenticated) should return 401/redirect.
+
+GET /healthz returns { ok: true }.
+Paste the responses.
+
+9) Prepare deployment
+Prompt 10 — Confirm deploy block
+
+Re-check .replit [deployment] for:
+
+toml
+Copy
+Edit
+[deployment]
+deploymentTarget = "autoscale"
+build = ["npm","run","build"]
+run   = ["npm","run","start"]
+If different, fix and show me the diff.
+
+(Why: Autoscale builds on deploy and scales to zero when idle; billing is request/compute-based. 
+Replit Docs
++2
+Replit Docs
++2
+)
