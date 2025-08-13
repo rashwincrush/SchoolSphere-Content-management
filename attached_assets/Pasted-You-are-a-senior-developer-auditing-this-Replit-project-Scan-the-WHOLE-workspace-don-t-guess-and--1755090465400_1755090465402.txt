@@ -1,0 +1,50 @@
+You are a senior developer auditing this Replit project. Scan the WHOLE workspace (don’t guess) and produce a “Product Dossier” with clear headings and bullet points.
+
+1) Identify the product
+- Project name, purpose, and what problem it solves (infer from README, code, and folder names).
+- Tech stack & frameworks (language versions; web framework; build tool; package manager).
+- App type (static site, API, full-stack, worker/cron, etc.).
+
+2) Inventory & key files (cite exact paths)
+- Top-level tree of folders/files (only meaningful ones).
+- Critical configs: .replit, replit.nix (or nix files), package.json / pyproject.toml / requirements.txt / go.mod / Cargo.toml, Dockerfile / Procfile, vite/next config, tsconfig, eslint/prettier, replit.* deployment sections.
+- Note missing-but-expected files (e.g., README, LICENSE, env example).
+
+3) How it runs in Replit (dev)
+- Default run command from .replit; show the exact command and explain what it does.
+- Internal app port(s) and external binding from [[ports]] in .replit; mention which URL path will work.
+- Nix/system dependencies from replit.nix or .replit; list packages and why they’re needed.
+- Dev scripts (npm/pnpm/yarn or others) and live-reload instructions.
+- Any required environment variables (LIST NAMES ONLY; don’t print secret values). Tell me where they’re referenced in code.
+
+4) Build & deploy
+- Build/compile steps and artifacts (exact commands).
+- Deployment target(s) supported by this repo and what’s configured (Static vs. App Deployments; Private Deployments; Scheduled/cron jobs). If configured in .replit, quote the relevant snippet.
+- Exact, step-by-step “How to Deploy on Replit” for THIS repo, including base directory for static, start command for apps, and any rewrites/headers needed.
+- Post-deploy URL format and how port mapping works.
+
+5) App surface area
+- API/server routes (HTTP methods + paths + handler files). If Express/Fastify/Flask/etc., list endpoints and middlewares.
+- Frontend routes (if Next.js/React Router/etc.).
+- Auth flows (which library/provider; where session/cookies/tokens handled).
+- Data stores (Replit Storage, Replit DB, Supabase, Postgres, SQLite, etc.), migrations, and connection locations.
+
+6) Tooling & quality
+- Lint/format/test frameworks and commands; test coverage if detectable.
+- Analytics/telemetry libraries, logging, and error handling.
+- Security notes: places that read secrets, CORS, rate-limits, auth checks.
+
+7) “How and why this was created”
+- Was this forked/imported from GitHub or a template? Show template indicators, repo origin/remote, or boilerplate fingerprints in README/package.json.
+- First commit/initial files that reveal intent.
+
+8) Risks & TODOs
+- Broken or unused code, obvious bugs, missing envs, unresolved imports, version conflicts, or vulnerable packages.
+- A prioritized TODO list to get the project production-ready.
+
+9) Deliverables
+- A concise TL;DR summary first (3–6 bullets).
+- Then the full report with code/line references in backticks.
+- Finish with a copy-ready Quickstart section (Dev, Test, Build, Deploy) and a minimal README.md draft for this exact project.
+
+Work step-by-step. If anything is ambiguous, state the uncertainty and show where you looked.
