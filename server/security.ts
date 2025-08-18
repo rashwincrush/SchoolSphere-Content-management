@@ -14,9 +14,17 @@ export function applySecurity(app: Express) {
   // Configure CORS
   app.use(cors({
     origin(origin: string | undefined, cb: (error: Error | null, allow?: boolean) => void) {
-      // Allow requests with no origin (mobile apps, etc) in development
-      if (!origin && process.env.NODE_ENV === 'development') return cb(null, true);
-      if (!origin || allowed.some(allowedOrigin => 
+      const isDev = process.env.NODE_ENV === 'development';
+      // In development, permit any localhost origin and requests without an Origin header (e.g., direct browser nav)
+      if (isDev) {
+        if (!origin) return cb(null, true);
+        if (origin.startsWith('http://localhost') || origin.startsWith('https://localhost')) {
+          return cb(null, true);
+        }
+      }
+
+      // Production and other cases: allow configured origins and Replit subdomains
+      if (!origin || allowed.some(allowedOrigin =>
         origin === allowedOrigin || origin.endsWith('.replit.app')
       )) {
         return cb(null, true);

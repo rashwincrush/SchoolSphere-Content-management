@@ -126,7 +126,7 @@ export default function Content() {
       {/* Post Form Dialog */}
       {showPostForm && (
         <PostForm 
-          isOpen={showPostForm}
+          open={showPostForm}
           onClose={() => setShowPostForm(false)}
         />
       )}

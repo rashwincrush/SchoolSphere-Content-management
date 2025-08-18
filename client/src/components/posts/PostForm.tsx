@@ -47,11 +47,14 @@ const postFormSchema = z.object({
 type PostFormData = z.infer<typeof postFormSchema>;
 
 interface PostFormProps {
-  open: boolean;
+  open?: boolean;
+  isOpen?: boolean; // For backward compatibility
   onClose: () => void;
 }
 
-export function PostForm({ open, onClose }: PostFormProps) {
+export function PostForm({ open, isOpen, onClose }: PostFormProps) {
+  // Support both prop names for backward compatibility
+  const dialogOpen = open || isOpen || false;
   const { t } = useLanguage();
   const { selectedBranchId } = useBranch();
   const { user } = useAuth();
@@ -110,7 +113,7 @@ export function PostForm({ open, onClose }: PostFormProps) {
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={dialogOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('createPost') || 'Create New Post'}</DialogTitle>

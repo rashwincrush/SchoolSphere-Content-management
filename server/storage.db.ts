@@ -32,10 +32,6 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserProfile(id: string, updates: Partial<User>): Promise<User>;
-  getUsers(organizationId: number, branchId?: number): Promise<User[]>;
-  createUser(userData: UpsertUser): Promise<User>;
-  updateUser(id: string, updates: Partial<User>): Promise<User>;
-  deleteUser(id: string): Promise<void>;
   
   // Organization operations
   getOrganization(id: number): Promise<Organization | undefined>;
@@ -117,41 +113,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
-  }
-
-  // Additional user operations for user management
-  async getUsers(organizationId: number, branchId?: number): Promise<User[]> {
-    if (branchId) {
-      return await db
-        .select()
-        .from(users)
-        .where(and(eq(users.organizationId, organizationId), eq(users.branchId, branchId)))
-        .orderBy(users.lastName);
-    }
-    
-    return await db
-      .select()
-      .from(users)
-      .where(eq(users.organizationId, organizationId))
-      .orderBy(users.lastName);
-  }
-
-  async createUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(userData).returning();
-    return user;
-  }
-
-  async updateUser(id: string, updates: Partial<User>): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
-
-  async deleteUser(id: string): Promise<void> {
-    await db.delete(users).where(eq(users.id, id));
   }
 
   // Organization operations
@@ -412,7 +373,7 @@ export class DatabaseStorage implements IStorage {
     return {
       totalPosts: totalPosts.count,
       recentPosts: recentPosts.count,
-      engagement: Math.floor(Math.random() * 100), // Placeholder until real engagement tracking
+      engagement: Math.floor(Math.random() * 100),
     };
   }
 

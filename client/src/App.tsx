@@ -7,6 +7,8 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { BranchProvider } from "@/context/BranchContext";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
+import DevLogin from "@/pages/dev-login";
+import AdminLogin from "@/pages/admin-login";
 import Dashboard from "@/pages/dashboard";
 import Events from "@/pages/events";
 import Content from "@/pages/content";
@@ -26,7 +28,11 @@ function Router() {
   return (
     <Switch>
       {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/dev-login" component={DevLogin} />
+          <Route path="/admin-login" component={AdminLogin} />
+        </>
       ) : (
         <>
           <Route path="/" component={Dashboard} />

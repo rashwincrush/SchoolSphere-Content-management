@@ -37,6 +37,7 @@ import {
   Mail,
   Phone
 } from 'lucide-react';
+import { UserForm } from '@/components/users/UserForm';
 
 type User = {
   id: string;
@@ -58,6 +59,7 @@ export default function Users() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showUserForm, setShowUserForm] = useState(false);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['/api/users', selectedBranchId],
@@ -194,7 +196,10 @@ export default function Users() {
             </p>
           </div>
           
-          <Button className="bg-primary-700 text-white hover:bg-primary-800">
+          <Button 
+            className="bg-primary-700 text-white hover:bg-primary-800"
+            onClick={() => setShowUserForm(true)}
+          >
             <UserPlus className="w-4 h-4 mr-2" />
             Add User
           </Button>
@@ -397,6 +402,14 @@ export default function Users() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* User Form Dialog */}
+      {showUserForm && (
+        <UserForm
+          open={showUserForm}
+          onClose={() => setShowUserForm(false)}
+        />
+      )}
     </AppShell>
   );
 }

@@ -1,18 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertEventSchema, insertPostSchema, insertRsvpSchema, insertBranchSchema } from "@shared/schema";
+import { insertEventSchema, insertPostSchema, insertRsvpSchema, insertBranchSchema, users } from "@shared/schema";
 import { z } from "zod";
+import { getAuthModule } from "./authProvider";
+import { getStorage } from "./storageProvider";
 
-// Helper function to get user's organization
-async function getUserOrganization(userId: string) {
-  const user = await storage.getUser(userId);
-  if (!user?.organizationId) {
-    throw new Error('User not associated with organization');
-  }
-  return user.organizationId;
-}
+// Helpers are defined inside registerRoutes to access resolved storage/auth
 
 // Profile update schema
 const profileUpdateSchema = z.object({
@@ -44,13 +37,28 @@ const settingsSchema = z.object({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Resolve auth and storage providers based on environment
+  const { setupAuth, isAuthenticated } = await getAuthModule();
+  const storage = await getStorage();
+
   // Auth middleware
   await setupAuth(app);
+
+  // Helper to get user id from either passport (replit) or dev session
+  const getUserId = (req: any) => req.user?.claims?.sub ?? req.session?.user?.claims?.sub;
+  // Helper to get user's organization
+  async function getUserOrganization(userId: string) {
+    const user = await storage.getUser(userId);
+    if (!user?.organizationId) {
+      throw new Error('User not associated with organization');
+    }
+    return user.organizationId;
+  }
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -62,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile routes
   app.patch('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const updates = profileUpdateSchema.parse(req.body);
       const user = await storage.updateUserProfile(userId, updates);
       res.json(user);
@@ -75,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Organization routes
   app.get('/api/organization', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organization = await storage.getOrganizationByUserId(userId);
       if (!organization) {
         return res.status(404).json({ message: "Organization not found" });
@@ -89,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/organization', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       
       // Check if user is owner or admin
@@ -110,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings routes
   app.get('/api/settings', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       const settings = await storage.getSettings(organizationId);
       res.json(settings);
@@ -122,7 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/settings', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       
       // Check if user is owner or admin
@@ -143,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Branch routes
   app.get('/api/branches', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       const branches = await storage.getBranches(organizationId);
       res.json(branches);
@@ -162,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if branch belongs to user's organization
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       if (branch.organizationId !== organizationId) {
         return res.status(403).json({ message: "Access denied" });
@@ -177,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/branches', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       
       // Check if user is owner or admin
@@ -201,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/branches/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       
       // Check if user is owner or admin
@@ -221,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/branches/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       
       // Check if user is owner or admin
@@ -241,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Event routes
   app.get('/api/events', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       const branchId = req.query.branchId ? parseInt(req.query.branchId as string) : undefined;
       const events = await storage.getEvents(organizationId, branchId);
@@ -261,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if event belongs to user's organization
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       if (event.organizationId !== organizationId) {
         return res.status(403).json({ message: "Access denied" });
@@ -276,7 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/events', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       
       const eventData = insertEventSchema.parse({
@@ -320,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/events/:eventId/rsvp', isAuthenticated, async (req: any, res) => {
     try {
       const eventId = parseInt(req.params.eventId);
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       
       const rsvpData = insertRsvpSchema.parse({
         eventId,
@@ -358,7 +366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Post routes
   app.get('/api/posts', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       const branchId = req.query.branchId ? parseInt(req.query.branchId as string) : undefined;
       const posts = await storage.getPosts(organizationId, branchId);
@@ -378,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if post belongs to user's organization
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       if (post.organizationId !== organizationId) {
         return res.status(403).json({ message: "Access denied" });
@@ -393,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/posts', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       
       const postData = insertPostSchema.parse({
@@ -436,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics routes
   app.get('/api/analytics/overview', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       const branchId = req.query.branchId ? parseInt(req.query.branchId as string) : undefined;
       
@@ -460,7 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Activity log routes
   app.get('/api/activity', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const organizationId = await getUserOrganization(userId);
       const branchId = req.query.branchId ? parseInt(req.query.branchId as string) : undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
@@ -473,10 +481,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User management routes
+  app.get('/api/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const organizationId = await getUserOrganization(userId);
+      const branchId = req.query.branchId ? parseInt(req.query.branchId as string) : undefined;
+      
+      const users = await storage.getUsers(organizationId, branchId);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post('/api/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      
+      // Check if user is owner or admin
+      if (!['owner', 'admin'].includes(user?.role || '')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const organizationId = await getUserOrganization(userId);
+      
+      const userData = {
+        ...req.body,
+        organizationId,
+        // Generate a random UUID for the user ID
+        id: `user_${Math.random().toString(36).substring(2, 15)}`,
+      };
+      
+      const newUser = await storage.createUser(userData);
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.patch('/api/users/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      
+      // Check if user is owner or admin
+      if (!['owner', 'admin'].includes(user?.role || '')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const targetUserId = req.params.id;
+      const updates = req.body;
+      const updatedUser = await storage.updateUser(targetUserId, updates);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete('/api/users/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      
+      // Check if user is owner or admin
+      if (!['owner', 'admin'].includes(user?.role || '')) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const targetUserId = req.params.id;
+      await storage.deleteUser(targetUserId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // Notification routes
   app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const notifications = await storage.getNotifications(userId);
       res.json(notifications);
     } catch (error) {

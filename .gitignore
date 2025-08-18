@@ -4,3 +4,13 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+# Environment and local secrets
+.env
+.env.*
+
+# Local runtime and cookies
+.local/
+auth_cookies.txt
+cookies.txt
+cookies_test.txt
+new_cookies.txt

@@ -18,7 +18,12 @@ export default function Landing() {
           <Button
             size="lg"
             className="bg-primary-700 hover:bg-primary-800 text-white px-8 py-3"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => {
+              // Add timestamp to bust cache and force fresh request
+              const loginUrl = `/api/login?t=${Date.now()}`;
+              // Use location.replace for clean navigation history
+              window.location.replace(loginUrl);
+            }}
           >
             Sign In to Get Started
           </Button>
@@ -94,7 +99,12 @@ export default function Landing() {
           <Button
             size="lg"
             className="bg-secondary-700 hover:bg-secondary-800 text-white px-8 py-3"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => {
+              // Add timestamp to bust cache and force fresh request
+              const loginUrl = `/api/login?t=${Date.now()}`;
+              // Use location.replace for clean navigation history
+              window.location.replace(loginUrl);
+            }}
           >
             Get Started Today
           </Button>
