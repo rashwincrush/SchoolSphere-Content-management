@@ -15,8 +15,10 @@ export function setupDevAuth(app: Express) {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      // For cross-site requests from Vercel -> Koyeb, require secure cookies
+      secure: process.env.NODE_ENV === 'production',
+      // SameSite=None required for third-party requests in modern browsers
+      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as any,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   }));
