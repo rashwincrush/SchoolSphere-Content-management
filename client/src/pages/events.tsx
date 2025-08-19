@@ -16,6 +16,7 @@ import { Plus, Search } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useBranch } from '@/context/BranchContext';
 import type { Event } from '@shared/schema';
+import { buildUrl } from '@/lib/queryClient';
 
 export default function Events() {
   const { t } = useLanguage();
@@ -29,7 +30,7 @@ export default function Events() {
     queryKey: ['/api/events', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/events?branchId=${selectedBranchId}` : '/api/events';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch events');
       return response.json();
     },

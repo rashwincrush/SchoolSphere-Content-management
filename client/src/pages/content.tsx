@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PostForm } from '@/components/posts/PostForm';
 import { Plus, Search, FileText, Clock, Eye } from 'lucide-react';
+import { buildUrl } from '@/lib/queryClient';
 
 export default function Content() {
   const { t } = useLanguage();
@@ -20,7 +21,7 @@ export default function Content() {
     queryKey: ['/api/posts', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/posts?branchId=${selectedBranchId}` : '/api/posts';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },

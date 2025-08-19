@@ -19,6 +19,7 @@ import {
   MessageCircle,
   BarChart3
 } from 'lucide-react';
+import { buildUrl } from '@/lib/queryClient';
 
 export default function Social() {
   const { t } = useLanguage();
@@ -28,7 +29,7 @@ export default function Social() {
     queryKey: ['/api/posts', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/posts?branchId=${selectedBranchId}` : '/api/posts';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
@@ -38,7 +39,7 @@ export default function Social() {
     queryKey: ['/api/analytics/social', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/analytics?branchId=${selectedBranchId}` : '/api/analytics/overview';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch stats');
       const data = await response.json();
       return data.social;

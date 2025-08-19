@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, buildUrl } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
 
 export default function DevLogin() {
@@ -27,7 +27,7 @@ export default function DevLogin() {
     try {
       setIsLoading(true);
       // Add timestamp to bust cache
-      const response = await fetch(`/api/login?t=${Date.now()}`, {
+      const response = await fetch(buildUrl(`/api/login?t=${Date.now()}`), {
         credentials: 'include'
       });
       

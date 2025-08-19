@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, buildUrl } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Users as UsersIcon, 
@@ -65,7 +65,7 @@ export default function Users() {
     queryKey: ['/api/users', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/users?branchId=${selectedBranchId}` : '/api/users';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch users');
       return response.json();
     },
@@ -75,7 +75,7 @@ export default function Users() {
     queryKey: ['/api/analytics/users', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/analytics/users/${selectedBranchId}` : '/api/analytics/users/';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch user stats');
       return response.json();
     },

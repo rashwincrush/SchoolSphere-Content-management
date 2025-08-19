@@ -16,6 +16,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { buildUrl } from '@/lib/queryClient';
 
 export default function Analytics() {
   const { t } = useLanguage();
@@ -25,7 +26,7 @@ export default function Analytics() {
     queryKey: ['/api/analytics', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/analytics/overview/${selectedBranchId}` : '/api/analytics/overview';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch overview stats');
       return response.json();
     },
@@ -35,7 +36,7 @@ export default function Analytics() {
     queryKey: ['/api/analytics/events', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/analytics/events/${selectedBranchId}` : '/api/analytics/events/';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch event stats');
       return response.json();
     },
@@ -45,7 +46,7 @@ export default function Analytics() {
     queryKey: ['/api/analytics/social', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/analytics/social/${selectedBranchId}` : '/api/analytics/social/';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch social stats');
       return response.json();
     },
@@ -55,7 +56,7 @@ export default function Analytics() {
     queryKey: ['/api/analytics/users', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/analytics/users/${selectedBranchId}` : '/api/analytics/users/';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch user stats');
       return response.json();
     },

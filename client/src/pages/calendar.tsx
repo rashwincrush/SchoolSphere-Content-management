@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO } from 'date-fns';
+import { buildUrl } from '@/lib/queryClient';
 
 export default function Calendar() {
   const { t } = useLanguage();
@@ -18,7 +19,7 @@ export default function Calendar() {
     queryKey: ['/api/events', selectedBranchId],
     queryFn: async () => {
       const url = selectedBranchId ? `/api/events/${selectedBranchId}` : '/api/events/';
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(buildUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch events');
       return response.json();
     },
