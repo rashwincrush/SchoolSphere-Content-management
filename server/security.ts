@@ -5,10 +5,12 @@ import type { Express } from 'express';
 export function applySecurity(app: Express) {
   // Get the actual Replit domain from environment or use localhost for dev
   const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const extraAllowed = process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean) || [];
   const allowed = [
     ...(replitDomain ? [`https://${replitDomain}`] : []),
     'http://localhost:5000',
-    'https://localhost:5000'
+    'https://localhost:5000',
+    ...extraAllowed,
   ];
 
   // Configure CORS
@@ -24,9 +26,10 @@ export function applySecurity(app: Express) {
       }
 
       // Production and other cases: allow configured origins and Replit subdomains
-      if (!origin || allowed.some(allowedOrigin =>
-        origin === allowedOrigin || origin.endsWith('.replit.app')
-      )) {
+      const isAllowed = !origin || allowed.some(allowedOrigin => origin === allowedOrigin);
+      const isReplit = !!origin && origin.endsWith('.replit.app');
+      const isVercel = !!origin && origin.endsWith('.vercel.app');
+      if (isAllowed || isReplit || isVercel) {
         return cb(null, true);
       }
       return cb(new Error('CORS blocked'));

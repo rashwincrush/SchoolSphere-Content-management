@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { School, Users, Calendar, BarChart3 } from 'lucide-react';
+import { buildUrl } from '@/lib/queryClient';
 
 export default function Landing() {
   return (
@@ -20,7 +21,8 @@ export default function Landing() {
             className="bg-primary-700 hover:bg-primary-800 text-white px-8 py-3"
             onClick={() => {
               // Add timestamp to bust cache and force fresh request
-              const loginUrl = `/api/login?t=${Date.now()}`;
+              const origin = window.location.origin;
+              const loginUrl = buildUrl(`/api/login?redirect=${encodeURIComponent(origin + '/')}&t=${Date.now()}`);
               // Use location.replace for clean navigation history
               window.location.replace(loginUrl);
             }}
@@ -101,7 +103,8 @@ export default function Landing() {
             className="bg-secondary-700 hover:bg-secondary-800 text-white px-8 py-3"
             onClick={() => {
               // Add timestamp to bust cache and force fresh request
-              const loginUrl = `/api/login?t=${Date.now()}`;
+              const origin = window.location.origin;
+              const loginUrl = buildUrl(`/api/login?redirect=${encodeURIComponent(origin + '/')}&t=${Date.now()}`);
               // Use location.replace for clean navigation history
               window.location.replace(loginUrl);
             }}

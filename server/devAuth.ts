@@ -27,7 +27,25 @@ export function setupDevAuth(app: Express) {
     const defaultUser = DEV_USERS[0];
     await storage.upsertUser({ id: defaultUser.id, email: defaultUser.email, firstName: 'Demo', lastName: 'Admin' });
     req.session.user = { claims: { sub: defaultUser.id } };
-    res.redirect('/');
+    // Optional redirect back to the frontend domain (useful when frontend and API are on different hosts)
+    const rawRedirect = (req.query?.redirect as string) || '/';
+    let safeRedirect = '/';
+    try {
+      const url = new URL(rawRedirect, rawRedirect.startsWith('http') ? undefined : undefined);
+      const host = url.host;
+      const isLocalhost = host.startsWith('localhost');
+      const isVercel = host.endsWith('.vercel.app');
+      const extra = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+      const isExtra = extra.some(origin => {
+        try { return new URL(origin).host === host; } catch { return false; }
+      });
+      if (isLocalhost || isVercel || isExtra) {
+        safeRedirect = url.toString();
+      }
+    } catch {
+      // ignore and use '/'
+    }
+    res.redirect(safeRedirect);
   });
 
   // Optional: POST credentials login
