@@ -13,8 +13,8 @@ export function applySecurity(app: Express) {
     ...extraAllowed,
   ];
 
-  // Configure CORS
-  app.use(cors({
+  // Configure CORS for API routes only
+  app.use('/api', cors({
     origin(origin: string | undefined, cb: (error: Error | null, allow?: boolean) => void) {
       const isDev = process.env.NODE_ENV === 'development';
       // In development, permit any localhost origin and requests without an Origin header (e.g., direct browser nav)
