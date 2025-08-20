@@ -20,11 +20,8 @@ export default function Landing() {
             size="lg"
             className="bg-primary-700 hover:bg-primary-800 text-white px-8 py-3"
             onClick={() => {
-              // Add timestamp to bust cache and force fresh request
-              const origin = window.location.origin;
-              const loginUrl = buildUrl(`/api/login?redirect=${encodeURIComponent(origin + '/')}&t=${Date.now()}`);
-              // Use location.replace for clean navigation history
-              window.location.replace(loginUrl);
+              // Send users to the dev login page instead of auto-login
+              window.location.href = '/dev-login';
             }}
           >
             Sign In to Get Started
@@ -102,11 +99,8 @@ export default function Landing() {
             size="lg"
             className="bg-secondary-700 hover:bg-secondary-800 text-white px-8 py-3"
             onClick={() => {
-              // Add timestamp to bust cache and force fresh request
-              const origin = window.location.origin;
-              const loginUrl = buildUrl(`/api/login?redirect=${encodeURIComponent(origin + '/')}&t=${Date.now()}`);
-              // Use location.replace for clean navigation history
-              window.location.replace(loginUrl);
+              // Send users to the dev login page instead of auto-login
+              window.location.href = '/dev-login';
             }}
           >
             Get Started Today

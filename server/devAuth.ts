@@ -62,7 +62,24 @@ export function setupDevAuth(app: Express) {
   });
 
   app.get('/api/logout', (req: any, res) => {
-    req.session.destroy(() => res.redirect('/'));
+    const rawRedirect = (req.query?.redirect as string) || '/';
+    let safeRedirect = '/';
+    try {
+      const url = new URL(rawRedirect);
+      const host = url.host;
+      const isLocalhost = host.startsWith('localhost');
+      const isVercel = host.endsWith('.vercel.app');
+      const extra = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+      const isExtra = extra.some(origin => {
+        try { return new URL(origin).host === host; } catch { return false; }
+      });
+      if (isLocalhost || isVercel || isExtra) {
+        safeRedirect = url.toString();
+      }
+    } catch {
+      // ignore and use '/'
+    }
+    req.session.destroy(() => res.redirect(safeRedirect));
   });
 }
 
