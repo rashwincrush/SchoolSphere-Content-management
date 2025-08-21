@@ -99,8 +99,8 @@ export default function Landing() {
             size="lg"
             className="bg-secondary-700 hover:bg-secondary-800 text-white px-8 py-3"
             onClick={() => {
-              // Send users to the dev login page instead of auto-login
-              window.location.href = '/dev-login';
+              // Redirect users to the contact page instead of sign-up/login
+              window.location.href = '/get-started';
             }}
           >
             Get Started Today

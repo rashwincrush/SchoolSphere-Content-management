@@ -21,6 +21,7 @@ import Profile from "@/pages/profile";
 import BranchManagement from "@/pages/branch-management";
 import FeatureHub from "@/pages/feature-hub";
 import NotFound from "@/pages/not-found";
+import GetStarted from "@/pages/get-started";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -32,6 +33,7 @@ function Router() {
           <Route path="/" component={Landing} />
           <Route path="/dev-login" component={DevLogin} />
           <Route path="/admin-login" component={AdminLogin} />
+          <Route path="/get-started" component={GetStarted} />
         </>
       ) : (
         <>
@@ -46,6 +48,7 @@ function Router() {
           <Route path="/features" component={FeatureHub} />
           <Route path="/profile" component={Profile} />
           <Route path="/branch-management" component={BranchManagement} />
+          <Route path="/get-started" component={GetStarted} />
         </>
       )}
       <Route component={NotFound} />
